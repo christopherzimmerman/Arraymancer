@@ -38,7 +38,17 @@ export  tensor,
         nlp,
         einsum
 
+import sequtils
+
 when not defined(no_lapack):
   # The ml module also does not export everything is LAPACK is not available
   import ./arraymancer/linear_algebra
   export linear_algebra
+
+let
+  a = toSeq(0..11).toTensor().reshape(3, 2, 2).asContiguous(colMajor, force=true)
+  b = toSeq(0..11).toTensor().reshape(3, 2, 2).asContiguous(rowMajor, force=true)
+
+echo a == b
+echo a.reshape(2, 6, layout=rowMajor)
+echo b.reshape(2, 6)

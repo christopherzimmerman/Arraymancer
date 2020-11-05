@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sequtils, sugar
+
 when defined(blis):
   import ./backend/blis
 
@@ -117,3 +119,65 @@ proc `*`*[T: Complex[float32] or Complex[float64]](
     gemv(complex(1.F, 0.F), a, b, complex(0.F, 0.F), result)
   else:
     raise newException(ValueError, "Matrix-Matrix or Matrix-Vector multiplication valid only if first Tensor is a Matrix and second is a Matrix or Vector")
+
+proc tensordot*[T : SomeNumber](
+  A, B: Tensor[T],
+  axes: seq[seq[int]]) : Tensor[T] {.inline.}=
+  ## Computes the dot product of two tensors along specified axes
+  assert axes.len == 2
+
+  var
+    axes_a = axes[0]
+    axes_b = axes[1]
+    equal = true
+
+  let
+    na = axes_a.len
+    nb = axes_b.len
+    a_shape = A.shape
+    b_shape = B.shape
+    nda = A.rank
+    ndb = B.rank
+
+  assert na == nb
+
+  for i in 0 ..< na:
+    if a_shape[axes_a[i]] != b_shape[axes_b[i]]:
+      equal = false
+      break
+    if axes_a[i] < 0:
+      axes_a[i] += nda
+    if axes_b[i] < 0:
+      axes_b[i] += ndb
+
+  assert equal
+
+  let
+    a_not = toSeq(0..<nda).filter(x => x notin axes_a)
+    newaxes_a = concat(a_not, axes_a)
+    b_not = toSeq(0..<ndb).filter(x => x notin axes_b)
+    newaxes_b = concat(axes_b, b_not)
+
+    old_a = a_not.map(ax => a_shape[ax])
+    old_b = b_not.map(bx => b_shape[bx])
+
+    new_size_a = foldl(old_a, a * b, 1)
+    new_size_b = foldl(old_b, a * b, 1)
+
+    out_shape = concat(old_a, old_b)
+
+  var
+    an = 1
+    bn = 1
+
+  for (ax, bx) in zip(axes_a, axes_b):
+    an *= a_shape[ax]
+    bn *= b_shape[bx]
+
+  let
+    new_shape_a = @[new_size_a, an]
+    new_shape_b = @[bn, new_size_b]
+    at = A.transpose(new_axes_a).reshape(new_shape_a)
+    bt = B.transpose(new_axes_b).reshape(new_shape_b)
+
+  result = (at * bt).reshape(out_shape)
