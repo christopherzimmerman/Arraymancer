@@ -42,3 +42,14 @@ when not defined(no_lapack):
   # The ml module also does not export everything is LAPACK is not available
   import ./arraymancer/linear_algebra
   export linear_algebra
+
+import sequtils
+
+let
+  a = toSeq(1..3).toTensor()
+  b = toSeq(1..3).toTensor()
+
+let result = map2_outer_inline(a, b):
+  x + y
+
+echo result

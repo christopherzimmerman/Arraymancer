@@ -87,6 +87,27 @@ template map2_inline*[T, U](t1: Tensor[T], t2: Tensor[U], op:untyped): untyped =
       data[i] = op
   dest
 
+template map2_outer_inline*[T, U](t1: Tensor[T], t2: Tensor[U], op:untyped): untyped =
+
+  let
+    z1 = t1 # ensure that if t1 is the result of a function it is not called multiple times
+    z2 = t2
+
+  type outType = type((
+    block:
+      var x{.inject.}: type(items(z1));
+      var y{.inject.}: type(items(z2));
+      op
+  ))
+
+  var dest = newTensorUninit[outType](concat(z1.shape, z2.shape))
+  withMemoryOptimHints()
+  let data{.restrict.} = dest.dataArray # Warning ⚠: data pointed to will be mutated
+
+  for i, x {.inject.}, y {.inject.} in enumerateZipOuter(z1, z2):
+    data[i] = op
+  dest
+
 template map3_inline*[T, U, V](t1: Tensor[T], t2: Tensor[U], t3: Tensor[V], op:untyped): untyped =
   let
     z1 = t1 # ensure that if t1 is the result of a function it is not called multiple times

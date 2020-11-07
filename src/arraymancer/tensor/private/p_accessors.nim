@@ -243,3 +243,44 @@ template tripleStridedIteration*(strider: IterKind, t1, t2, t3, iter_offset, ite
       advanceStridedIteration(t1_coord, t1_backstrides, t1_iter_pos, t1, iter_offset, iter_size)
       advanceStridedIteration(t2_coord, t2_backstrides, t2_iter_pos, t2, iter_offset, iter_size)
       advanceStridedIteration(t3_coord, t3_backstrides, t3_iter_pos, t3, iter_offset, iter_size)
+
+template outerStridedIteration*(strider: IterKind, t1, t2, t1_offset, t1_size, t2_offset, t2_size: typed): untyped =
+  ## Iterate over the outer combination of two Tensors, displaying data in C order.
+  let t1_contiguous = t1.is_C_Contiguous()
+  let t2_contiguous = t2.is_C_Contiguous()
+
+  # Get tensor data address with offset builtin
+  withMemoryOptimHints()
+  let t1data{.restrict.} = t1.dataArray # Warning ⚠: data pointed may be mutated
+  let t2data{.restrict.} = t2.dataArray
+
+  var flatIdx = 0
+
+  if t1_contiguous and t2_contiguous:
+    for i in t1_offset..<(t1_offset+t1_size):
+      for j in t2_offset..<(t2_offset+t2_size):
+        dualStridedIterationYield(strider, t1data, t2data, flatIdx, i, j)
+        flatIdx += 1
+  elif t1_contiguous:
+    for i in t1_offset..<(t1_offset+t1_size):
+      initStridedIteration(t2_coord, t2_backstrides, t2_iter_pos, t2, t2_offset, t2_size)
+      for j in t2_offset..<(t2_offset+t2_size):
+        dualStridedIterationYield(strider, t1data, t2data, flatIdx, i, t2_iter_pos)
+        advanceStridedIteration(t2_coord, t2_backstrides, t2_iter_pos, t2, t2_offset, t2_size)
+        flatIdx += 1
+  elif t2_contiguous:
+    initStridedIteration(t1_coord, t1_backstrides, t1_iter_pos, t1, t1_offset, t1_size)
+    for i in t1_offset..<(t1_offset+t1_size):
+      for j in t2_offset..<(t2_offset+t2_size):
+        dualStridedIterationYield(strider, t1data, t2data, flatIdx, t1_iter_pos, j)
+        flatIdx += 1
+      advanceStridedIteration(t1_coord, t1_backstrides, t1_iter_pos, t1, t1_offset, t1_size)
+  else:
+    initStridedIteration(t1_coord, t1_backstrides, t1_iter_pos, t1, t1_offset, t1_size)
+    for i in t1_offset..<(t1_offset+t1_size):
+      initStridedIteration(t2_coord, t2_backstrides, t2_iter_pos, t2, t2_offset, t2_size)
+      for j in t2_offset..<(t2_offset+t2_size):
+        dualStridedIterationYield(strider, t1data, t2data, flatIdx, t1_iter_pos, t2_iter_pos)
+        advanceStridedIteration(t2_coord, t2_backstrides, t2_iter_pos, t2, t2_offset, t2_size)
+        flatIdx += 1
+      advanceStridedIteration(t1_coord, t1_backstrides, t1_iter_pos, t1, t1_offset, t1_size)

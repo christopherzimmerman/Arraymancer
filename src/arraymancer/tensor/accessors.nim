@@ -138,6 +138,11 @@ iterator zip*[T,U](t1: Tensor[T], t2: Tensor[U]): (T,U) {.inline,noSideEffect.} 
     check_size(t1, t2)
   dualStridedIteration(IterKind.Values, t1, t2, 0, t1.size)
 
+iterator zipOuter*[T,U](t1: Tensor[T], t2: Tensor[U]): (T,U) {.inline,noSideEffect.} =
+  ## Iterates through the outer product of two tensors returning their elements
+  ## in a tuple
+  outerStridedIteration(IterKind.Values, t1, t2, 0, t1.size, 0, t2.size)
+
 iterator zip*[T,U](t1: Tensor[T], t2: Tensor[U], offset, size: int): (T,U) {.inline,noSideEffect.} =
   ## Iterates simultaneously on two tensors returning their elements in a tuple. (with offset)
   ## Note: only tensors of the same shape will be zipped together.
@@ -175,6 +180,11 @@ iterator mzip*[T,U](t1: var Tensor[T], t2: Tensor[U]): (var T, U) {.inline,noSid
   when compileOption("boundChecks"):
     check_size(t1, t2)
   dualStridedIteration(IterKind.Values, t1, t2, 0, t1.size)
+
+iterator mzipOuter*[T,U](t1: Tensor[T], t2: Tensor[U]): (var T,U) {.inline,noSideEffect.} =
+  ## Iterates through the outer product of two tensors returning their elements
+  ## in a tuple (mutable)
+  outerStridedIteration(IterKind.Values, t1, t2, 0, t1.size, 0, t2.size)
 
 iterator mzip*[T,U](t1: var Tensor[T], t2: Tensor[U], offset, size: int): (var T, U) {.inline,noSideEffect.} =
   ## Iterates simultaneously on two tensors returning their elements in a tuple. (mutable, with offset)
@@ -221,6 +231,11 @@ iterator enumerateZip*[T,U](t1: Tensor[T], t2: Tensor[U]): (int,T,U) {.inline,no
     check_size(t1, t2)
   dualStridedIteration(IterKind.Iter_Values, t1, t2, 0, t1.size)
 
+iterator enumerateZipOuter*[T,U](t1: Tensor[T], t2: Tensor[U]): (int,T,U) {.inline,noSideEffect.} =
+  ## Enumerate through the outer product of two tensors returning their elements
+  ## in a tuple (mutable)
+  outerStridedIteration(IterKind.Iter_Values, t1, t2, 0, t1.size, 0, t2.size)
+
 iterator enumerateZip*[T,U](t1: Tensor[T], t2: Tensor[U], offset, size: int): (int,T,U) {.inline,noSideEffect.} =
   ## Enumerate simultaneously on two tensors returning their elements in a tuple. (with offset)
   ## Note: only tensors of the same shape will be zipped together.
@@ -258,6 +273,11 @@ iterator menumerateZip*[T,U](t1: var Tensor[T], t2: Tensor[U]): (int, var T,U) {
   when compileOption("boundChecks"):
     check_size(t1, t2)
   dualStridedIteration(IterKind.Iter_Values, t1, t2, 0, t1.size)
+
+iterator menumerateZipOuter*[T,U](t1: Tensor[T], t2: Tensor[U]): (int,var T,U) {.inline,noSideEffect.} =
+  ## Enumerate through the outer product of two tensors returning their elements
+  ## in a tuple (mutable)
+  outerStridedIteration(IterKind.Iter_Values, t1, t2, 0, t1.size, 0, t2.size)
 
 iterator menumerateZip*[T,U](t1: var Tensor[T], t2: Tensor[U], offset, size: int): (int, var T,U) {.inline,noSideEffect.} =
   ## Enumerate simultaneously on two tensors returning their elements in a tuple. (mutable, with offset)
